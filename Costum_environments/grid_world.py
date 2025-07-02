@@ -18,6 +18,9 @@ class MonteCarloEnv:
   def reset(self):
     raise NotImplementedError()
 
+  def get_valid_actions(self, state: int) -> list[int]:
+    raise NotImplementedError()
+
 class GridWorld_MC(MonteCarloEnv):
     def __init__(self):
         self.s = 0  # position initiale (état)
@@ -81,3 +84,16 @@ class GridWorld_MC(MonteCarloEnv):
     def get_all_actions(self):
         """Return all possible actions in the grid world"""
         return list(range(self.num_actions()))  # Actions are 0 to 3
+    
+    def get_valid_actions(self, state: int) -> list[int]:
+        row, col = divmod(state, 5)
+        valid_actions = []
+        if col > 0:
+           valid_actions.append(0)  # gauche
+        if col < 4:
+           valid_actions.append(1)  # droite
+        if row > 0:
+           valid_actions.append(2)  # haut
+        if row < 4:
+           valid_actions.append(3)  # bas
+        return valid_actions

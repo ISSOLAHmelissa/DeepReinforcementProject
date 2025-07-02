@@ -56,3 +56,13 @@ class MontyHallLevel01Env:
         # Pour DP : retourner un modèle {s: {a: [(p, s’, r, done), ...]}}
         # Optionnel — à coder si DP nécessaire
         pass
+    
+    def get_valid_actions(self, state=None):
+        if state is None:
+           state = self.state
+        if state[0] == 'start':
+           return [0, 1, 2]
+        elif state[0] == 'second_choice':
+           return ['keep', 'switch']
+        return []
+

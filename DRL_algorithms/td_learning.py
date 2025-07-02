@@ -2,17 +2,13 @@ import numpy as np
 
 def expected_sarsa_control(env, num_episodes, alpha=0.1, gamma=0.99, epsilon=0.1):
     all_states = env.get_all_states()
-    all_actions = env.get_all_actions()
 
-    # 🔹 Initialize Q(s, a) only for valid (state, action) pairs
+    # 🔹 Initialize Q(s, a) using only valid (state, action) pairs from env
     Q = {}
     for state in all_states:
         Q[state] = {}
-        row, col = divmod(state, 5)
-        if col > 0: Q[state][0] = 0.0  # Left
-        if col < 4: Q[state][1] = 0.0  # Right
-        if row > 0: Q[state][2] = 0.0  # Up
-        if row < 4: Q[state][3] = 0.0  # Down
+        for action in env.get_valid_actions(state):
+            Q[state][action] = 0.0
 
     def get_policy_probs(state):
         """Epsilon-greedy policy probabilities for VALID actions only."""
@@ -25,7 +21,7 @@ def expected_sarsa_control(env, num_episodes, alpha=0.1, gamma=0.99, epsilon=0.1
         probs[best_action] += 1.0 - epsilon
         return probs
 
-    for episode_num in range(num_episodes):
+    for _ in range(num_episodes):
         state = env.reset()
         done = False
 
@@ -36,32 +32,27 @@ def expected_sarsa_control(env, num_episodes, alpha=0.1, gamma=0.99, epsilon=0.1
             probs = list(action_probs.values())
             action = np.random.choice(actions, p=probs)
             
-            # 🔹 Take step (remove `_` since env.step() returns only 3 values)
             next_state, reward, done = env.step(action)
 
             # 🔹 Calculate expected Q-value for next_state
-            if not done:
+            expected_q = 0.0
+            if not done and next_state in Q:
                 next_action_probs = get_policy_probs(next_state)
                 expected_q = sum(
                     next_action_probs[a] * Q[next_state][a] 
-                    for a in Q[next_state]  # Only valid actions
+                    for a in Q[next_state]
                 )
-            else:
-                expected_q = 0.0  # Terminal state has no future rewards
 
-            # 🔹 Update Q-value
-            Q[state][action] += alpha * (
-                reward + gamma * expected_q - Q[state][action]
-            )
-
+            # 🔹 Update Q
+            Q[state][action] += alpha * (reward + gamma * expected_q - Q[state][action])
             state = next_state
 
     # 🔹 Derive final greedy policy
     policy = {}
     for state in all_states:
-        if Q[state]:  # Only if state has valid actions
+        if Q[state]:
             policy[state] = max(Q[state], key=Q[state].get)
         else:
-            policy[state] = None  # Handle terminal states if needed
+            policy[state] = None
 
     return policy, Q

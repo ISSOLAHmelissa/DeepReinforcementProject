@@ -13,23 +13,18 @@ def on_policy_fisrt_visit_mc_control(env, epsilon, num_episodes):
         Q[state] = {}
         policy[state] = {}
         valid_actions = []
-        
-        # Check which actions are valid (won't go out of bounds)
-        row, col = divmod(state, 5)
-        if col > 0: valid_actions.append(0)  # left
-        if col < 4: valid_actions.append(1)  # right
-        if row > 0: valid_actions.append(2)  # up
-        if row < 4: valid_actions.append(3)  # down
+        valid_actions = env.get_valid_actions(state)
 
         # Initialize Q and policy only for valid actions
         for action in valid_actions:
             Q[state][action] = 0.0
             policy[state][action] = 1.0 / len(valid_actions)  # Uniform initial policy
-
-    Returns = {}
-    for state in all_states:
-        for action in all_actions:
-            Returns[(state, action)] = []
+            
+        Returns = {}
+        for state in all_states:
+            valid_actions = env.get_valid_actions(state)
+            for action in valid_actions:
+                Returns[(state, action)] = []
 
     for episode_num in range(num_episodes):
         episode = generate_episode(env, policy)
@@ -63,10 +58,7 @@ def off_policy_mc_control(env, num_episodes):
     def get_valid_actions(state):
         row, col = divmod(state, 5)
         valid = []
-        if col > 0: valid.append(0)  # left
-        if col < 4: valid.append(1)  # right
-        if row > 0: valid.append(2)  # up
-        if row < 4: valid.append(3)  # down
+        valid = env.get_valid_actions(state)
         return valid
 
     target_policy = {}
