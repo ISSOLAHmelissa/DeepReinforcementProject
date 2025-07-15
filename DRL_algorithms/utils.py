@@ -26,6 +26,7 @@ def generate_episode(env, policy):
     return episode
 
 
+
 def display_policy_console(policy):
     action_symbols = {
         0: '←',
@@ -159,25 +160,57 @@ def plot_deterministic_policy(policy):
         ax2.text(d, 0.5, label, ha='center', va='center', fontsize=12, weight='bold')
 
     plt.show()
+    
+    
+import matplotlib.pyplot as plt
 
-def plot_monty_hall_2_policy(policy):
-    # Group by decision depth
-    depth_groups = defaultdict(list)
-    for state in policy:
-        phase, choices, _ = state
-        depth = len(choices)
-        depth_groups[depth].append(state)
-    
-    # Plot each depth level
-    fig, axes = plt.subplots(nrows=len(depth_groups), figsize=(12, 8))
-    
-    for depth, states in depth_groups.items():
-        ax = axes[depth] if len(depth_groups) > 1 else axes
-        for state in states:
-            action_probs = policy[state]
-            ax.bar([str(a) for a in action_probs.keys()], 
-                   action_probs.values())
-            ax.set_title(f"Depth {depth}: After choosing {state[1]}")
-    
+def plot_monty_hall_level2_deterministic(policy):
+    """
+    Affiche un résumé et une représentation graphique de la policy.
+    """
+    # Préparer les données
+    known_states = {k: v for k, v in policy.items() if v is not None}
+    unknown_states = {k: v for k, v in policy.items() if v is None}
+
+    print(f"\n=== POLICY SUMMARY ===")
+    print(f"Nombre total d'états : {len(policy)}")
+    print(f"États connus         : {len(known_states)}")
+    print(f"États inconnus       : {len(unknown_states)}")
+
+    # Affichage sous forme de tableau
+    print("\n=== États connus ===")
+    for state, action in sorted(known_states.items(), key=lambda item: len(item[0][1])):
+        seq = state[1]
+        print(f"Séquence {seq} --> Action {action}")
+
+    # Statistiques par longueur de séquence
+    lengths = [len(s[1]) for s in policy if s[0] == 'start']
+    counts = {}
+    for l in lengths:
+        counts[l] = counts.get(l, 0) + 1
+
+    known_lengths = [len(s[1]) for s in known_states if s[0] == 'start']
+    known_counts = {}
+    for l in known_lengths:
+        known_counts[l] = known_counts.get(l, 0) + 1
+
+    # Bar chart : nombre d'états connus par longueur de séquence
+    all_lengths = sorted(set(lengths))
+    total_per_len = [counts.get(l, 0) for l in all_lengths]
+    known_per_len = [known_counts.get(l, 0) for l in all_lengths]
+
+    plt.figure(figsize=(8, 5))
+    bar_width = 0.4
+    r1 = [x - bar_width/2 for x in all_lengths]
+    r2 = [x + bar_width/2 for x in all_lengths]
+
+    plt.bar(r1, total_per_len, width=bar_width, label="Total états")
+    plt.bar(r2, known_per_len, width=bar_width, label="États connus")
+
+    plt.xlabel("Longueur de la séquence de choix")
+    plt.ylabel("Nombre d'états")
+    plt.title("Couverture de la policy")
+    plt.xticks(all_lengths)
+    plt.legend()
     plt.tight_layout()
     plt.show()
