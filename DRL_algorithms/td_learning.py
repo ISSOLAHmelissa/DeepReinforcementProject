@@ -1,57 +1,61 @@
 import numpy as np
 from collections import defaultdict
 
-import numpy as np
-
 def expected_sarsa_control(env, num_episodes, alpha=0.1, gamma=0.99, epsilon=0.1):
-    # Initialize Q-table with defaultdict (no need to pre-populate)
     Q = defaultdict(lambda: defaultdict(float))
-
-    def get_policy_probs(state):
-        """Epsilon-greedy policy probabilities for valid actions."""
-        valid_actions = env.get_valid_actions(state)
-        if not valid_actions:
+    
+    def get_policy_probs(state, available_actions):
+        """Epsilon-greedy probs given available actions in a state."""
+        if not available_actions.size:
             return {}
-            
-        # Find best action (automatically handles new states via defaultdict)
-        best_action = max(valid_actions, key=lambda a: Q[state][a])
-        
-        # Initialize probabilities
-        probs = {a: epsilon/len(valid_actions) for a in valid_actions}
+        best_action = max(available_actions, key=lambda a: Q[state][a])
+        probs = {a: epsilon/len(available_actions) for a in available_actions}
         probs[best_action] += 1.0 - epsilon
         return probs
-
+    
     for _ in range(num_episodes):
-        state = env.reset()
-        done = False
-
+        env.reset()
+        state = env.state_id()
+        prev_score = env.score()
+        done = env.is_game_over()
+        
         while not done:
-            # Get action probabilities
-            action_probs = get_policy_probs(state)
-            if not action_probs:  # No valid actions (terminal state)
+            available_actions = env.available_actions()
+            action_probs = get_policy_probs(state, available_actions)
+            if not action_probs:
                 break
             
-            # Choose action
+            # Sample action
             actions, probs = zip(*action_probs.items())
             action = np.random.choice(actions, p=probs)
             
             # Take action
-            next_state, reward, done = env.step(action)
-
-            # Calculate expected Q-value
+            env.step(action)
+            new_score = env.score()
+            reward = new_score - prev_score
+            prev_score = new_score
+            next_state = env.state_id()
+            done = env.is_game_over()
+            
+            # Expected Q
             expected_q = 0.0
             if not done:
-                next_probs = get_policy_probs(next_state)
-                expected_q = sum(prob * Q[next_state][a] for a, prob in next_probs.items())
-
-            # Update Q-value (no KeyError thanks to defaultdict)
+                next_available_actions = env.available_actions()
+                next_probs = get_policy_probs(next_state, next_available_actions)
+                expected_q = sum(p * Q[next_state][a] for a, p in next_probs.items())
+            
+            # Update Q
             Q[state][action] += alpha * (reward + gamma * expected_q - Q[state][action])
+            
             state = next_state
+    
+    # Build final policy: greedy w.r.t. Q
+    policy = {}
+    for state in Q.keys():
+        best_action = max(Q[state].items(), key=lambda x: x[1])[0]
+        policy[state] = best_action
 
-    # Extract policy (convert defaultdict to regular dict)
-    policy = {
-        state: max(Q[state].items(), key=lambda x: x[1])[0] if Q[state] else None
-        for state in set(env.get_all_states()) | set(Q.keys())
-    }
-
-    return dict(policy), dict(Q)
+    # Convert nested defaultdict to dict
+    Q_dict = {s: dict(aq) for s, aq in Q.items()}
+    
+    return policy, Q_dict
