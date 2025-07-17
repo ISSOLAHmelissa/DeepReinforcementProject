@@ -6,10 +6,10 @@ def expected_sarsa_control(env, num_episodes, alpha=0.1, gamma=0.99, epsilon=0.1
     
     def get_policy_probs(state, available_actions):
         """Epsilon-greedy probs given available actions in a state."""
-        if not available_actions.size:
+        if not available_actions:
             return {}
         best_action = max(available_actions, key=lambda a: Q[state][a])
-        probs = {a: epsilon/len(available_actions) for a in available_actions}
+        probs = {a: epsilon / len(available_actions) for a in available_actions}
         probs[best_action] += 1.0 - epsilon
         return probs
     
