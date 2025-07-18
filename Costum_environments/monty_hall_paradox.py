@@ -66,12 +66,35 @@ class MontyHallLevel01Env:
            return ['keep', 'switch']
         return []
     
-import random
+    def is_terminal(self):
+        return self.done
+    def score(self):
+        # Return 1 if player won, 0 otherwise. Only valid after terminal state.
+        if self.state[0] == 'terminal':
+            return 1.0 if self.state[1] == self.state[2] else 0.0
+        return 0.0
+    def is_game_over(self):
+        return self.is_terminal()
+    def available_actions(self, state=None):
+        return self.get_valid_actions(state)
+    def state_id(self, state=None):
+        if state is None:
+            state = self.state
+        return str(state)
+    def num_actions(self, state=None):
+        if state is None:
+            state = self.state
+        return len(self.get_valid_actions(state))
 
+
+
+
+    
+
+import random
 from itertools import combinations, permutations
 
 import random
-from itertools import combinations, permutations
 
 class MontyHallLevel02Env:
     def __init__(self):
@@ -84,7 +107,7 @@ class MontyHallLevel02Env:
         self.choices = []
         self.revealed_doors = []
         self.done = False
-        self.state = ('start', tuple(self.choices), tuple(self.revealed_doors))  # ✅ tuple
+        self.state = ('start', tuple(self.choices), tuple(self.revealed_doors))
         return self.state   
 
     def get_valid_actions(self, state=None):
@@ -104,7 +127,6 @@ class MontyHallLevel02Env:
         if self.state[0] == 'start':
             self.choices.append(action)
 
-            # Révéler une porte ≠ choix du tour courant, ≠ gagnante, ≠ déjà révélée
             candidates = [
                 d for d in self.doors
                 if d != action and d != self.winning_door and d not in self.revealed_doors
@@ -113,10 +135,9 @@ class MontyHallLevel02Env:
             if candidates:
                 revealed = random.choice(candidates)
                 self.revealed_doors.append(revealed)
-                print(f"🧑‍🔧 Monty a révélé la porte {revealed} (perdante).")
 
             if len(self.choices) < self.max_steps:
-                self.state = ('start', tuple(self.choices), tuple(self.revealed_doors))  # ✅ YES
+                self.state = ('start', tuple(self.choices), tuple(self.revealed_doors))
                 return self.state, 0.0, False
             else:
                 still_closed = [d for d in self.doors if d not in self.revealed_doors]
@@ -127,8 +148,7 @@ class MontyHallLevel02Env:
 
                 remaining_closed = [d for d in still_closed if d != last_choice]
                 if len(remaining_closed) != 1:
-                    raise AssertionError(f"Erreur logique : {remaining_closed} portes restantes. "
-                                         f"Choix: {self.choices}, Révélées: {self.revealed_doors}, Fermées: {still_closed}")
+                    raise AssertionError(f"Erreur logique : {remaining_closed} portes restantes.")
 
                 self.remaining_closed = remaining_closed[0]
                 self.state = ('final_choice', last_choice, self.remaining_closed)
@@ -150,7 +170,7 @@ class MontyHallLevel02Env:
 
     def is_terminal(self):
         return self.done
-    
+
     def get_all_states(self):
         states = set()
         doors = self.doors
@@ -159,51 +179,42 @@ class MontyHallLevel02Env:
             if depth > 3:
                 return
 
-            # Ajouter l’état actuel — toujours avec des tuples
             states.add(('start', tuple(choices), tuple(revealed)))
 
             if depth < 3:
                 valid_choices = [d for d in doors if d not in revealed]
-
                 for choice in valid_choices:
                     possible_reveal = [
                         d for d in doors
                         if d != choice and d not in revealed
                     ]
                     for r in possible_reveal:
-                        # Ajout proprement en tuple
                         new_choices = tuple(list(choices) + [choice])
                         new_revealed = tuple(list(revealed) + [r])
                         build_states(new_choices, new_revealed, depth + 1)
 
-        # États 'start'
         build_states(tuple(), tuple(), 0)
 
-        # États 'final_choice'
         for last_choice in doors:
             for remaining in doors:
                 if remaining != last_choice:
                     states.add(('final_choice', last_choice, remaining))
 
-        # États 'terminal'
         for d in doors:
             states.add(('terminal', d))
 
         return list(states)
-    
+
     def state_id(self):
         return self.state
 
-
     def available_actions(self):
         return self.get_valid_actions(self.state)
-    
+
     def is_game_over(self):
         return self.done
-    
+
     def score(self):
         if self.state[0] == 'terminal':
             return 1.0 if self.state[1] == self.winning_door else 0.0
         return 0.0
-
-

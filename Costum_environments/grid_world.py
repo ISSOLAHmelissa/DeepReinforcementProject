@@ -121,3 +121,5 @@ class GridWorld_MC(MonteCarloEnv):
         if row < 4:
             valid.append(3)
         return valid
+    def is_terminal(self):
+        return self.done
