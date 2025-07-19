@@ -115,18 +115,23 @@ def plot_monty_hall_policy(policy):
     plt.show()
     
 def plot_deterministic_policy(policy):
+    # Convertir les clés en tuples si ce sont des chaînes
+    converted_policy = {
+        eval(k) if isinstance(k, str) else k: v for k, v in policy.items()
+    }
+
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.set_title("Politique déterministe - Monty Hall")
 
     # === PARTIE 1 : États 'second_choice' ===
-    second_states = [k for k in policy if k[0] == 'second_choice']
+    second_states = [k for k in converted_policy if k[0] == 'second_choice']
     labels = []
     actions = []
 
     for state in second_states:
         label = f"{state[1]} vs {state[2]}"
         labels.append(label)
-        actions.append(policy[state])
+        actions.append(converted_policy[state])
 
     y_pos = np.arange(len(labels))
     colors = ['orange' if action == 'switch' else 'skyblue' for action in actions]
@@ -145,7 +150,7 @@ def plot_deterministic_policy(policy):
 
     # === PARTIE 2 : État 'start' ===
     fig2, ax2 = plt.subplots()
-    start_action = policy.get(('start', None, None))
+    start_action = converted_policy.get(('start', None, None))
     doors = [0, 1, 2]
     colors2 = ['green' if d == start_action else 'lightgray' for d in doors]
 
@@ -160,6 +165,3 @@ def plot_deterministic_policy(policy):
         ax2.text(d, 0.5, label, ha='center', va='center', fontsize=12, weight='bold')
 
     plt.show()
-    
-    
-import matplotlib.pyplot as plt

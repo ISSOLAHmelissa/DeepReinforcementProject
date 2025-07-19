@@ -218,3 +218,6 @@ class MontyHallLevel02Env:
         if self.state[0] == 'terminal':
             return 1.0 if self.state[1] == self.winning_door else 0.0
         return 0.0
+
+
+   
