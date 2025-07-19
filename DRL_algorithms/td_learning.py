@@ -63,3 +63,51 @@ def sarsa_control(env, num_episodes, alpha=0.1, gamma=0.99, epsilon=0.1):
 
     return policy, Q_dict
 
+import random
+
+
+def q_learning(env, num_episodes=10000, alpha=0.1, gamma=0.99, epsilon=0.1):
+    # Q[state][action] = value
+    Q = defaultdict(lambda: dict())
+    
+    for episode in range(num_episodes):
+        env.reset()
+        s = env.state_id()
+
+        while not env.is_game_over():
+            actions = env.available_actions()
+            
+            # Initialize Q-values for unseen state-action pairs
+            for a_ in actions:
+                if a_ not in Q[s]:
+                    Q[s][a_] = 0.0
+
+            # Epsilon-greedy policy
+            if random.random() < epsilon:
+                a = random.choice(actions)
+            else:
+                a = max(Q[s], key=Q[s].get)
+
+            # Step in environment
+            next_state, reward, done = env.step(a)
+            s_ = env.state_id()
+
+            # Initialize Q-values for next state
+            for a_ in env.available_actions():
+                if a_ not in Q[s_]:
+                    Q[s_][a_] = 0.0
+
+            # Q-learning update
+            next_max = max(Q[s_].values()) if not done else 0.0
+            Q[s][a] += alpha * (reward + gamma * next_max - Q[s][a])
+
+            # Move to next state
+            s = s_
+
+    # Derive greedy policy
+    policy = {}
+    for state in Q:
+        if Q[state]:
+            policy[state] = max(Q[state], key=Q[state].get)
+
+    return policy, Q
