@@ -118,3 +118,72 @@ def off_policy_mc_control(env, num_episodes, gamma=0.99):
                 break
 
     return target_policy, {k: dict(v) for k, v in Q.items()}
+
+from collections import defaultdict
+import random
+
+from collections import defaultdict
+import random
+
+def mc_es_control(env, num_episodes, gamma=0.99):
+    Q = defaultdict(lambda: defaultdict(float))
+    returns = defaultdict(list)
+    policy = defaultdict(lambda: defaultdict(float))
+
+    for _ in range(num_episodes):
+        # --- Exploring Start ---
+        state = env.reset()
+        state = env.state_id()
+        valid_actions = env.available_actions()
+
+        if valid_actions is None or len(valid_actions) == 0:
+            continue
+
+        action = random.choice(valid_actions)  # Action aléatoire initiale
+        env.step(action)
+
+        episode = []
+        done = env.is_game_over()
+        prev_score = env.score()
+        episode.append((state, action, 0))  # Reward = 0 à l'init
+
+        state = env.state_id()
+
+        # --- Générer l’épisode jusqu’à la fin ---
+        while not done:
+            valid_actions = env.available_actions()
+            if state in policy and policy[state]:
+                actions = list(policy[state].keys())
+                probs = list(policy[state].values())
+                action = random.choices(actions, weights=probs, k=1)[0]
+            else:
+                action = random.choice(valid_actions)
+
+            env.step(action)
+            new_score = env.score()
+            reward = new_score - prev_score
+            prev_score = new_score
+
+            episode.append((state, action, reward))
+            state = env.state_id()
+            done = env.is_game_over()
+
+        # --- Mise à jour Q et politique ---
+        G = 0
+        visited = set()
+
+        for t in reversed(range(len(episode))):
+            s, a, r = episode[t]
+            G = gamma * G + r
+
+            if (s, a) not in visited:
+                visited.add((s, a))
+                returns[(s, a)].append(G)
+                Q[s][a] = sum(returns[(s, a)]) / len(returns[(s, a)])
+
+                best_action = max(Q[s].items(), key=lambda x: x[1])[0]
+                valid_actions = Q[s].keys()
+                for act in valid_actions:
+                    policy[s][act] = 1.0 if act == best_action else 0.0
+
+    return dict(policy), {k: dict(v) for k, v in Q.items()}

@@ -1,3 +1,82 @@
+import numpy as np
+from collections import defaultdict
+from collections import defaultdict
+
+class GridWorld:
+    def __init__(self, rows=5, cols=5):
+        self.rows = rows
+        self.cols = cols
+        self.n_states = rows * cols
+        self.n_actions = 4  # 0: gauche, 1: droite, 2: haut, 3: bas
+        self.terminal_states = [4, 24]  # état 4 (-3), état 24 (+1)
+        self.rewards_dict = {4: -3.0, 24: 1.0}
+        self.R = sorted(list(set(self.rewards_dict.values()) | {0.0}))  # [-3.0, 0.0, 1.0]
+
+        self.model = defaultdict(lambda: defaultdict(list))
+        self.valid_actions = defaultdict(list)
+        self.forbidden_actions = defaultdict(list)
+
+        self._build_model()
+
+    def _coords(self, s):
+        return divmod(s, self.cols)
+
+    def _to_state(self, row, col):
+        return row * self.cols + col
+
+    def _build_model(self):
+        for s in range(self.n_states):
+            row, col = self._coords(s)
+
+            for a in range(self.n_actions):
+                if s in self.terminal_states:
+                    # Terminal state: transition vers soi-même avec reward 0
+                    self.model[s][a].append((1.0, s, 0.0, True))
+                    continue
+
+                new_row, new_col = row, col
+                if a == 0 and col > 0:         # gauche
+                    new_col -= 1
+                elif a == 1 and col < self.cols - 1:  # droite
+                    new_col += 1
+                elif a == 2 and row > 0:       # haut
+                    new_row -= 1
+                elif a == 3 and row < self.rows - 1:  # bas
+                    new_row += 1
+                else:
+                    # Action interdite (mur)
+                    self.forbidden_actions[s].append(a)
+                    continue
+
+                s_prime = self._to_state(new_row, new_col)
+                reward = self.rewards_dict.get(s_prime, 0.0)
+                done = s_prime in self.terminal_states
+
+                self.model[s][a].append((1.0, s_prime, reward, done))
+                self.valid_actions[s].append(a)
+
+    def get_all_states(self):
+        return list(range(self.n_states))
+
+    def get_all_actions(self):
+        return list(range(self.n_actions))
+
+    def get_rewards(self):
+        return self.R
+
+    def get_model(self):
+        return self.model
+
+    def get_valid_actions(self):
+        return self.valid_actions
+
+    def get_terminal_states(self):
+        return self.terminal_states
+
+    def is_terminal(self, s):
+        return s in self.terminal_states
+
+
 class MonteCarloEnv:
     def num_states(self) -> int:
         raise NotImplementedError()
@@ -47,7 +126,7 @@ class MonteCarloEnv:
         """
         raise NotImplementedError()
 
-
+import random
 class GridWorld_MC(MonteCarloEnv):
     def __init__(self):
         self.s = 0
@@ -121,3 +200,15 @@ class GridWorld_MC(MonteCarloEnv):
         if row < 4:
             valid.append(3)
         return valid
+    def from_random_state(self):
+
+        self.s = random.randint(0, self.num_states() - 1)
+        self.inner_score = 0.0
+        return self.s
+    
+    def display(self):
+        grid = ['.'] * self.num_states()
+        grid[self.s] = 'A'
+        for i in range(0, self.num_states(), 5):
+            print("".join(grid[i:i+5]))
+
