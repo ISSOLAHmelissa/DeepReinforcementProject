@@ -77,7 +77,3 @@ This repository does not include a license file. If you want others to use or co
 ## Contact
 
 Repository owner: @ISSOLAHmelissa
-
-----
-
-(README created automatically by GitHub Copilot on 2025-11-28)
